@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/Eduard-Konovka/phaser3-tutorial/issues"
   },
-  "homepage": "https://github.com/Eduard-Konovka/phaser3-tutorial#readme"
+  "homepage": "https://github.com/Eduard-Konovka/phaser3-tutorial#readme",
+  "dependencies": {
+    "phaser": "^3.55.2"
+  }
 }

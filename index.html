@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>My first Phaser 3 Game</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+      body {
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        margin-top: calc((100vh - 600px) / 2);
+      }
+    </style>
+  </head>
+  <body>
+    <script type="text/javascript">
+      const config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        physics: {
+          default: "arcade",
+          arcade: {
+            gravity: { y: 300 },
+            debug: false,
+          },
+        },
+        scene: {
+          preload: preload,
+          create: create,
+          update: update,
+        },
+      };
+
+      let player;
+      let stars;
+      let bombs;
+      let platforms;
+      let cursors;
+      let score = 0;
+      let gameOver = false;
+      let scoreText;
+
+      const game = new Phaser.Game(config);
+
+      function preload() {
+        this.load.image("sky", "assets/sky.png");
+        this.load.image("ground", "assets/platform.png");
+        this.load.image("star", "assets/star.png");
+        this.load.image("bomb", "assets/bomb.png");
+        this.load.spritesheet("dude", "assets/dude.png", {
+          frameWidth: 32,
+          frameHeight: 48,
+        });
+      }
+
+      function create() {
+        // Простой фон для нашей игры
+        this.add.image(400, 300, "sky");
+
+        // Группа платформ содержит землю и 2 выступа, на которые мы можем запрыгнуть
+        platforms = this.physics.add.staticGroup();
+
+        // Здесь мы создаем землю.
+        // Масштабируем её под ширину игры (исходный спрайт размером 400x32)
+        platforms.create(400, 568, "ground").setScale(2).refreshBody();
+
+        // Теперь создаем выступы
+        platforms.create(600, 400, "ground");
+        platforms.create(50, 250, "ground");
+        platforms.create(750, 220, "ground");
+
+        // Герой и его настройки
+        player = this.physics.add.sprite(100, 450, "dude");
+
+        // Физические свойства героя. Даём маленькому парню легкий отскок
+        player.setBounce(0.2);
+        player.setCollideWorldBounds(true);
+
+        // Анимации нашего героя, повороты, ходьба влево и вправо
+        this.anims.create({
+          key: "left",
+          frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 3 }),
+          frameRate: 10,
+          repeat: -1,
+        });
+
+        this.anims.create({
+          key: "turn",
+          frames: [{ key: "dude", frame: 4 }],
+          frameRate: 20,
+        });
+
+        this.anims.create({
+          key: "right",
+          frames: this.anims.generateFrameNumbers("dude", { start: 5, end: 8 }),
+          frameRate: 10,
+          repeat: -1,
+        });
+
+        // События ввода с клавиатуры
+        cursors = this.input.keyboard.createCursorKeys();
+
+        // Несколько звезд для сбора, всего 12, равномерно расположенных
+        // на расстоянии 70 пикселей друг от друга по оси x
+        stars = this.physics.add.group({
+          key: "star",
+          repeat: 11,
+          setXY: { x: 12, y: 0, stepX: 70 },
+        });
+
+        stars.children.iterate(function (child) {
+          // Даем каждой звезде немного другой отскок
+          child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+        });
+
+        bombs = this.physics.add.group();
+
+        // Счёт
+        scoreText = this.add.text(16, 16, "score: 0", {
+          fontSize: "32px",
+          fill: "#000",
+        });
+
+        // Столкновение игрока, звёзд и бомб с платформами
+        this.physics.add.collider(player, platforms);
+        this.physics.add.collider(stars, platforms);
+        this.physics.add.collider(bombs, platforms);
+
+        // Проверяет, не пересекается ли игрок с какой-либо из звезд - вызывает функцию collectStar
+        this.physics.add.overlap(player, stars, collectStar, null, this);
+
+        // Проверяет, не пересекается ли игрок с какой-либо из бомб - вызывает функцию hitBomb
+        this.physics.add.collider(player, bombs, hitBomb, null, this);
+      }
+
+      function update() {
+        if (gameOver) {
+          return;
+        }
+
+        if (cursors.left.isDown) {
+          player.setVelocityX(-160);
+
+          player.anims.play("left", true);
+        } else if (cursors.right.isDown) {
+          player.setVelocityX(160);
+
+          player.anims.play("right", true);
+        } else {
+          player.setVelocityX(0);
+
+          player.anims.play("turn");
+        }
+
+        if (cursors.up.isDown && player.body.touching.down) {
+          player.setVelocityY(-330);
+        }
+      }
+
+      function collectStar(player, star) {
+        star.disableBody(true, true);
+
+        // Добавляем и обновляем счет
+        score += 1;
+        scoreText.setText("Score: " + score);
+
+        if (stars.countActive(true) === 0) {
+          //  A new batch of stars to collect
+          stars.children.iterate(function (child) {
+            child.enableBody(true, child.x, 0, true, true);
+          });
+
+          var x =
+            player.x < 400
+              ? Phaser.Math.Between(400, 800)
+              : Phaser.Math.Between(0, 400);
+
+          var bomb = bombs.create(x, 16, "bomb");
+          bomb.setBounce(1);
+          bomb.setCollideWorldBounds(true);
+          bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+          bomb.allowGravity = false;
+        }
+      }
+
+      function hitBomb(player, bomb) {
+        this.physics.pause();
+
+        player.setTint(0xff0000);
+
+        player.anims.play("turn");
+
+        gameOver = true;
+      }
+    </script>
+  </body>
+</html>
