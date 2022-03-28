@@ -1,0 +1,19 @@
+{
+  "name": "phaser3-tutorial",
+  "version": "1.0.0",
+  "description": "Test task of dynamic keys",
+  "main": "index.js",
+  "scripts": {
+    "start": "node test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Eduard-Konovka/phaser3-tutorial.git"
+  },
+  "author": "Eduard Konovka <ed098ua@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Eduard-Konovka/phaser3-tutorial/issues"
+  },
+  "homepage": "https://github.com/Eduard-Konovka/phaser3-tutorial#readme"
+}
